@@ -15,6 +15,7 @@ import logging
 import math
 import os
 import shlex
+import sys
 import threading
 import time
 from pathlib import Path
@@ -54,6 +55,12 @@ def _ensure_vercel_sdk() -> None:
     # module loads — we only set the default, never override an explicit
     # user value.
     os.environ.setdefault("VERCEL_TELEMETRY_DISABLED", "1")
+    # Already importable (a prior ensure this process, or a test that mocks
+    # the SDK into sys.modules) → nothing to install. Without this, CI —
+    # where the SDK isn't installed and lazy installs are disabled — fails
+    # the whole suite even though the tests never touch the real SDK.
+    if "vercel.sandbox" in sys.modules:
+        return
     try:
         from tools.lazy_deps import ensure as _lazy_ensure
         _lazy_ensure("terminal.vercel", prompt=False)
